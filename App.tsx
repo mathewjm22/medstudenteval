@@ -6,16 +6,23 @@ import ProfileHeader from './components/ProfileHeader';
 import CompetenciesCard from './components/CompetenciesCard';
 import EvaluationsCard from './components/EvaluationsCard';
 import RightSidebar from './components/RightSidebar';
-import { Student, Phase, Competency, Evaluation, Assignment, EvaluationSkills, EvaluationSkillComments } from './types';
+import { Student, Phase, Competency, Evaluation, Assignment, EvaluationSkills, EvaluationSkillComments, Preceptor } from './types';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>('Dashboard');
   const [activePhase, setActivePhase] = useState<Phase>('mid');
   const [isEvalModalOpen, setIsEvalModalOpen] = useState(false);
+  const [isPreceptorModalOpen, setIsPreceptorModalOpen] = useState(false);
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [aiSummary, setAiSummary] = useState<string>('');
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [viewingEval, setViewingEval] = useState<Evaluation | null>(null);
+
+  // Preceptor State
+  const [preceptor, setPreceptor] = useState<Preceptor>({
+    name: "Dr. Preceptor (You)",
+    avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuAu_bA54j7E6jHFqEr44Dh7hoeMipzwNO5SAsYcZ5ZGmNFADIgn685yOJigN8VfHo_2yuoGMg3BHVXz4wJpXBYhA8Jh5DJ_2v9-OTD0FhiqPNoU7W1pK5T7IdSRdTsnta6FN5qzN-KZErGa0oCo6lN_w9fRatQXnF81CjUH4LUp13xquR3nYCcH_ylWA9vZz_-nIidgsPYjG1MeznQRUY71svahsV1Eck_gGDd3lDdIB4daCqGrKzmvUQslvPHNIvgR6xHN_w4ODkIu"
+  });
   
   // Evaluation Modal Form State
   const [editingEvalId, setEditingEvalId] = useState<string | null>(null);
@@ -41,6 +48,9 @@ const App: React.FC = () => {
       treatmentPlan: ''
     }
   });
+
+  // Preceptor Modal Form State
+  const [preceptorForm, setPreceptorForm] = useState<Preceptor>({ ...preceptor });
 
   // Clinical Conditions State
   const [conditions, setConditions] = useState([
@@ -150,6 +160,7 @@ const App: React.FC = () => {
   const handleExport = () => {
     try {
       const data = {
+        preceptor,
         students,
         evaluations,
         competencies,
@@ -183,6 +194,7 @@ const App: React.FC = () => {
       reader.onload = (event) => {
         try {
           const content = JSON.parse(event.target?.result as string);
+          if (content.preceptor) setPreceptor(content.preceptor);
           if (content.students) setStudents(content.students);
           if (content.evaluations) setEvaluations(content.evaluations);
           if (content.competencies) setCompetencies(content.competencies);
@@ -196,6 +208,23 @@ const App: React.FC = () => {
       reader.readAsText(file);
     };
     input.click();
+  };
+
+  const handlePreceptorAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreceptorForm(prev => ({ ...prev, avatar: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handlePreceptorSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPreceptor({ ...preceptorForm });
+    setIsPreceptorModalOpen(false);
   };
 
   const generateAISummary = async () => {
@@ -270,7 +299,21 @@ const App: React.FC = () => {
     if (editingEvalId) {
       setEvaluations(prev => prev.map(ev => ev.id === editingEvalId ? { ...ev, title: evalForm.title, date: displayDate, score: isNaN(score) ? 4.0 : score, comment: evalForm.comment, conditions: splitConditions, taughtConcepts: splitConcepts, skills: { ...evalForm.skills }, skillComments: { ...evalForm.skillComments } } : ev));
     } else {
-      setEvaluations([{ id: Date.now().toString(), title: evalForm.title, date: displayDate, score: isNaN(score) ? 4.0 : score, comment: evalForm.comment, conditions: splitConditions, taughtConcepts: splitConcepts, skills: { ...evalForm.skills }, skillComments: { ...evalForm.skillComments }, evaluator: { name: "Dr. Preceptor (You)", avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuAu_bA54j7E6jHFqEr44Dh7hoeMipzwNO5SAsYcZ5ZGmNFADIgn685yOJigN8VfHo_2yuoGMg3BHVXz4wJpXBYhA8Jh5DJ_2v9-OTD0FhiqPNoU7W1pK5T7IdSRdTsnta6FN5qzN-KZErGa0oCo6lN_w9fRatQXnF81CjUH4LUp13xquR3nYCcH_ylWA9vZz_-nIidgsPYjG1MeznQRUY71svahsV1Eck_gGDd3lDdIB4daCqGrKzmvUQslvPHNIvgR6xHN_w4ODkIu" } }, ...evaluations]);
+      setEvaluations([{ 
+        id: Date.now().toString(), 
+        title: evalForm.title, 
+        date: displayDate, 
+        score: isNaN(score) ? 4.0 : score, 
+        comment: evalForm.comment, 
+        conditions: splitConditions, 
+        taughtConcepts: splitConcepts, 
+        skills: { ...evalForm.skills }, 
+        skillComments: { ...evalForm.skillComments }, 
+        evaluator: { 
+          name: preceptor.name, 
+          avatar: preceptor.avatar 
+        } 
+      }, ...evaluations]);
       // Update student patient count
       setStudents(prev => prev.map(s => s.name === currentStudent.name ? { ...s, patientsCount: s.patientsCount + 1 } : s));
     }
@@ -459,7 +502,56 @@ const App: React.FC = () => {
         onNavigate={setCurrentView} 
         onExport={handleExport}
         onImport={handleImport}
+        preceptor={preceptor}
+        onEditProfile={() => {
+          setPreceptorForm({ ...preceptor });
+          setIsPreceptorModalOpen(true);
+        }}
       />
+
+      {isPreceptorModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white dark:bg-[#1a202c] w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95">
+            <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
+              <h3 className="text-xl font-bold dark:text-white">Edit Your Profile</h3>
+              <button onClick={() => setIsPreceptorModalOpen(false)}><span className="material-symbols-outlined text-gray-400">close</span></button>
+            </div>
+            <form onSubmit={handlePreceptorSubmit} className="p-6 space-y-6">
+              <div className="flex flex-col items-center gap-4">
+                <div className="relative group">
+                  <div 
+                    className="size-24 rounded-full bg-cover bg-center border-4 border-white dark:border-gray-800 shadow-lg"
+                    style={{ backgroundImage: `url('${preceptorForm.avatar}')` }}
+                  ></div>
+                  <label className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity">
+                    <span className="material-symbols-outlined text-white text-2xl">photo_camera</span>
+                    <input type="file" className="hidden" accept="image/*" onChange={handlePreceptorAvatarChange} />
+                  </label>
+                </div>
+                <p className="text-xs text-gray-400 font-medium">Click to update photo</p>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold uppercase text-gray-400">Display Name</label>
+                <input 
+                  type="text" 
+                  required 
+                  value={preceptorForm.name} 
+                  onChange={e => setPreceptorForm({ ...preceptorForm, name: e.target.value })} 
+                  className="w-full mt-1 rounded-lg border-gray-300 dark:bg-gray-800 dark:border-gray-700 dark:text-white" 
+                  placeholder="e.g. Dr. Preceptor"
+                />
+              </div>
+
+              <div className="flex gap-4 pt-2">
+                <button type="button" onClick={() => setIsPreceptorModalOpen(false)} className="flex-1 py-3 border border-gray-200 dark:border-gray-700 rounded-lg font-bold dark:text-white">Cancel</button>
+                <button type="submit" className="flex-1 py-3 bg-primary text-white font-bold rounded-lg shadow-lg hover:bg-blue-700">Save Changes</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {isEvalModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="bg-white dark:bg-[#1a202c] w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95">
