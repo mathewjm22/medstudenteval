@@ -40,6 +40,7 @@ const Header: React.FC<HeaderProps> = ({
             {navItems.map((item) => (
               <button
                 key={item}
+                type="button"
                 onClick={() => onNavigate(item)}
                 className={`text-sm font-medium transition-colors px-2 py-1 rounded-md ${
                   currentView === item 
@@ -55,6 +56,7 @@ const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center gap-2 sm:gap-4">
           <div className="flex items-center gap-1 border-r border-gray-200 dark:border-gray-700 pr-2 sm:pr-4 mr-1">
             <button 
+              type="button"
               onClick={onExport}
               className="p-2 text-[#616f89] hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all flex flex-col items-center group relative"
               title="Export Student Data"
@@ -63,6 +65,7 @@ const Header: React.FC<HeaderProps> = ({
               <span className="hidden lg:block text-[10px] font-bold mt-0.5">EXPORT</span>
             </button>
             <button 
+              type="button"
               onClick={onImport}
               className="p-2 text-[#616f89] hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all flex flex-col items-center group relative"
               title="Import Student Data"
@@ -73,15 +76,19 @@ const Header: React.FC<HeaderProps> = ({
           </div>
           
           <button 
+            type="button"
             aria-label="Preceptor Profile" 
-            onClick={onEditProfile}
+            onClick={(e) => {
+              e.preventDefault();
+              onEditProfile();
+            }}
             className="flex items-center gap-2 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-gray-900"
           >
             <div 
-              className="size-10 rounded-full bg-cover bg-center border border-gray-200 dark:border-gray-700" 
+              className="size-10 rounded-full bg-cover bg-center border border-gray-200 dark:border-gray-700 pointer-events-none" 
               style={{ backgroundImage: `url('${preceptor.avatar}')` }}
             ></div>
-            <span className="material-symbols-outlined text-gray-400 hidden sm:block">arrow_drop_down</span>
+            <span className="material-symbols-outlined text-gray-400 hidden sm:block pointer-events-none">arrow_drop_down</span>
           </button>
         </div>
       </div>
