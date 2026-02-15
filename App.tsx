@@ -12,6 +12,7 @@ const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>('Dashboard');
   const [activePhase, setActivePhase] = useState<Phase>('mid');
   const [isEvalModalOpen, setIsEvalModalOpen] = useState(false);
+  const [isAllEvalsModalOpen, setIsAllEvalsModalOpen] = useState(false);
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [aiSummary, setAiSummary] = useState<string>('');
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
@@ -107,7 +108,7 @@ const App: React.FC = () => {
     }
   ]);
 
-  const [students, setStudents] = useState<Student[]>([
+  const students: Student[] = [
     {
       name: "Alex Lockwood",
       year: "MS3",
@@ -116,7 +117,7 @@ const App: React.FC = () => {
       startDate: "Jan 4",
       endDate: "Feb 15",
       week: 3,
-      patientsCount: 2,
+      patientsCount: evaluations.length,
       avgEval: 4.5,
       progressPercent: 68,
       weeksRemaining: 4,
@@ -126,7 +127,7 @@ const App: React.FC = () => {
       name: "Jamie Vance",
       year: "MS4",
       status: "Active",
-      rotation: "Inpatient Internal Medicine Rotation",
+      rotation: "Outpatient Internal Medicine Rotation",
       startDate: "Jan 10",
       endDate: "Feb 28",
       week: 2,
@@ -136,72 +137,15 @@ const App: React.FC = () => {
       weeksRemaining: 6,
       avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuCc5TyV6hjONVHhaASBdgm-ptO0sizLYXAfn0K9XZYcuSLVoz-4NZ_jn0fBb4hdVM5-84BOyv-Cj62VwIfnMy11slnhsfBdrVcAWvR428pptkfMIQ51HM6a0TJ9GogCNylFuyFcju9mxS2v1zh-UJL0oQk-F2SO5ISe3h2a8veuLbxRjw38SbKBiZ7HigJoHyUSKEtEE58wX3fJT2mdcOy2ZWwaurt23ShhRCH-mh8ss9LLxY4pIopSOPHfZzmnw08sOZA8uzLMr8jv"
     }
-  ]);
+  ];
 
-  const currentStudent = students.find(s => s.name === selectedStudentId) || students[0];
-
-  const handleUpdateAvatar = (newAvatar: string) => {
-    setStudents(prev => prev.map(s => 
-      s.name === currentStudent.name ? { ...s, avatar: newAvatar } : s
-    ));
-  };
-
-  const handleExport = () => {
-    try {
-      const data = {
-        students,
-        evaluations,
-        competencies,
-        assignments,
-        conditions,
-        exportedAt: new Date().toISOString()
-      };
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `MedTrack_Export_${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error("Failed to export data", err);
-      alert("Failed to export data. Please check your browser permissions.");
-    }
-  };
-
-  const handleImport = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'application/json';
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        try {
-          const content = JSON.parse(event.target?.result as string);
-          if (content.students) setStudents(content.students);
-          if (content.evaluations) setEvaluations(content.evaluations);
-          if (content.competencies) setCompetencies(content.competencies);
-          if (content.assignments) setAssignments(content.assignments);
-          if (content.conditions) setConditions(content.conditions);
-          alert("Data imported successfully!");
-        } catch (err) {
-          alert("Failed to parse the file. Please ensure it's a valid MedTrack export.");
-        }
-      };
-      reader.readAsText(file);
-    };
-    input.click();
-  };
+  const student = useMemo(() => students.find(s => s.name === selectedStudentId) || students[0], [selectedStudentId]);
 
   const generateAISummary = async () => {
     setIsGeneratingSummary(true);
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      const prompt = `You are a medical education expert writing a clinical rotation summary for a student named ${currentStudent.name}. 
+      const prompt = `You are a medical education expert writing a clinical rotation summary for a student named ${student.name}. 
       Based on the following evaluation data, provide a professional "One-Page" summary.
       
       Evaluation Data:
@@ -270,8 +214,6 @@ const App: React.FC = () => {
       setEvaluations(prev => prev.map(ev => ev.id === editingEvalId ? { ...ev, title: evalForm.title, date: displayDate, score: isNaN(score) ? 4.0 : score, comment: evalForm.comment, conditions: splitConditions, taughtConcepts: splitConcepts, skills: { ...evalForm.skills }, skillComments: { ...evalForm.skillComments } } : ev));
     } else {
       setEvaluations([{ id: Date.now().toString(), title: evalForm.title, date: displayDate, score: isNaN(score) ? 4.0 : score, comment: evalForm.comment, conditions: splitConditions, taughtConcepts: splitConcepts, skills: { ...evalForm.skills }, skillComments: { ...evalForm.skillComments }, evaluator: { name: "Dr. Preceptor (You)", avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuAu_bA54j7E6jHFqEr44Dh7hoeMipzwNO5SAsYcZ5ZGmNFADIgn685yOJigN8VfHo_2yuoGMg3BHVXz4wJpXBYhA8Jh5DJ_2v9-OTD0FhiqPNoU7W1pK5T7IdSRdTsnta6FN5qzN-KZErGa0oCo6lN_w9fRatQXnF81CjUH4LUp13xquR3nYCcH_ylWA9vZz_-nIidgsPYjG1MeznQRUY71svahsV1Eck_gGDd3lDdIB4daCqGrKzmvUQslvPHNIvgR6xHN_w4ODkIu" } }, ...evaluations]);
-      // Update student patient count
-      setStudents(prev => prev.map(s => s.name === currentStudent.name ? { ...s, patientsCount: s.patientsCount + 1 } : s));
     }
     setIsEvalModalOpen(false);
   };
@@ -289,33 +231,64 @@ const App: React.FC = () => {
       <div className="flex justify-between items-end">
         <div>
           <h1 className="text-3xl font-extrabold dark:text-white">Preceptor Dashboard</h1>
-          <p className="text-[#616f89] dark:text-gray-400">Team health and rotation status overview.</p>
+          <p className="text-[#616f89] dark:text-gray-400">Welcome back, Dr. Preceptor. Here is your team's status.</p>
         </div>
         <div className="flex gap-4">
           <div className="p-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex items-center gap-4">
-            <div className="size-10 bg-green-100 text-green-700 rounded-full flex items-center justify-center"><span className="material-symbols-outlined">groups</span></div>
-            <div><p className="text-[10px] font-bold text-gray-400 uppercase">Active</p><p className="text-xl font-black dark:text-white">{students.length}</p></div>
+            <div className="size-10 bg-green-100 text-green-700 rounded-full flex items-center justify-center">
+              <span className="material-symbols-outlined">groups</span>
+            </div>
+            <div>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Active Students</p>
+              <p className="text-xl font-black dark:text-white">2</p>
+            </div>
           </div>
           <div className="p-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex items-center gap-4">
-            <div className="size-10 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center"><span className="material-symbols-outlined">avg_pace</span></div>
-            <div><p className="text-[10px] font-bold text-gray-400 uppercase">Avg Score</p><p className="text-xl font-black dark:text-white">4.6</p></div>
+            <div className="size-10 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center">
+              <span className="material-symbols-outlined">avg_pace</span>
+            </div>
+            <div>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Team Avg</p>
+              <p className="text-xl font-black dark:text-white">4.6</p>
+            </div>
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {students.map((s, idx) => (
-          <div key={idx} onClick={() => { setSelectedStudentId(s.name); setCurrentView('Students'); }} className="group bg-white dark:bg-[#1a202c] rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm hover:shadow-xl hover:border-primary/50 transition-all cursor-pointer relative overflow-hidden">
+          <div 
+            key={idx}
+            onClick={() => { setCurrentView('Students'); setSelectedStudentId(s.name); }}
+            className="group bg-white dark:bg-[#1a202c] rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm hover:shadow-xl hover:border-primary/50 transition-all cursor-pointer relative overflow-hidden"
+          >
+            <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
+              <span className="material-symbols-outlined text-primary">open_in_new</span>
+            </div>
             <div className="flex items-center gap-4 mb-6">
               <div className="size-16 rounded-full bg-cover bg-center border-2 border-primary/10" style={{ backgroundImage: `url('${s.avatar}')` }}></div>
-              <div><h3 className="text-xl font-extrabold dark:text-white">{s.name}</h3><p className="text-sm text-gray-500 font-medium">{s.year} • {s.rotation}</p></div>
+              <div>
+                <h3 className="text-xl font-extrabold dark:text-white">{s.name}</h3>
+                <p className="text-sm text-gray-500 font-medium">{s.year} • {s.rotation}</p>
+              </div>
             </div>
             <div className="space-y-4">
-              <div className="flex justify-between items-end text-sm"><span className="font-bold text-gray-400">Progress</span><span className="font-black text-primary">{s.progressPercent}%</span></div>
-              <div className="h-2 w-full bg-gray-100 dark:bg-gray-800 rounded-full"><div className="h-full bg-primary rounded-full transition-all duration-1000" style={{ width: `${s.progressPercent}%` }}></div></div>
+              <div className="flex justify-between items-end text-sm">
+                <span className="font-bold text-gray-400 uppercase tracking-tighter">Progress</span>
+                <span className="font-black text-primary">{s.progressPercent}%</span>
+              </div>
+              <div className="h-2 w-full bg-gray-100 dark:bg-gray-800 rounded-full">
+                <div className="h-full bg-primary rounded-full" style={{ width: `${s.progressPercent}%` }}></div>
+              </div>
               <div className="grid grid-cols-2 gap-4 pt-2">
-                <div className="p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg text-center"><p className="text-[10px] font-bold text-gray-400 uppercase">Week</p><p className="text-lg font-black dark:text-white">{s.week}</p></div>
-                <div className="p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg text-center"><p className="text-[10px] font-bold text-gray-400 uppercase">Avg Eval</p><p className="text-lg font-black text-primary">{s.avgEval}</p></div>
+                <div className="p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg text-center">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase">Avg Eval</p>
+                  <p className="text-lg font-black text-primary">{s.avgEval}</p>
+                </div>
+                <div className="p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg text-center">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase">Week</p>
+                  <p className="text-lg font-black dark:text-white">{s.week}</p>
+                </div>
               </div>
             </div>
           </div>
@@ -326,46 +299,32 @@ const App: React.FC = () => {
 
   const renderSchedule = () => (
     <div className="animate-in fade-in duration-500">
-      <h2 className="text-2xl font-black dark:text-white mb-6">Clinical Schedule</h2>
+      <h2 className="text-2xl font-black dark:text-white mb-6">Rotation Schedule</h2>
       <div className="bg-white dark:bg-[#1a202c] rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-lg">
-        <div className="grid grid-cols-7 bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => <div key={d} className="p-4 text-center text-xs font-black text-gray-400 uppercase">{d}</div>)}
+        <div className="grid grid-cols-1 md:grid-cols-7 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+            <div key={day} className="p-4 text-center text-xs font-black text-gray-400 uppercase tracking-widest">{day}</div>
+          ))}
         </div>
-        <div className="grid grid-cols-7 min-h-[500px]">
+        <div className="grid grid-cols-1 md:grid-cols-7 min-h-[500px]">
           {Array.from({ length: 35 }).map((_, i) => (
-            <div key={i} className="p-4 border-r border-b border-gray-100 dark:border-gray-700 min-h-[120px] hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+            <div key={i} className="p-4 border-r border-b border-gray-100 dark:border-gray-700 min-h-[100px] hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
               <span className="text-xs font-bold text-gray-300">{(i % 31) + 1}</span>
-              {i === 17 && <div className="mt-2 p-2 bg-primary/10 border border-primary/20 rounded-lg"><p className="text-[10px] font-black text-primary uppercase">2:00 PM</p><p className="text-[10px] font-bold dark:text-white line-clamp-1">Alex Feedback Session</p></div>}
-              {i === 20 && <div className="mt-2 p-2 bg-green-100 border border-green-200 rounded-lg"><p className="text-[10px] font-black text-green-700 uppercase">9:00 AM</p><p className="text-[10px] font-bold text-green-800 line-clamp-1">Clinical Rounds</p></div>}
-              {i === 12 && <div className="mt-2 p-2 bg-purple-100 border border-purple-200 rounded-lg"><p className="text-[10px] font-black text-purple-700 uppercase">12:00 PM</p><p className="text-[10px] font-bold text-purple-800 line-clamp-1">Grand Rounds</p></div>}
+              {i === 17 && (
+                <div className="mt-2 p-2 bg-primary/10 border border-primary/20 rounded-lg">
+                  <p className="text-[10px] font-black text-primary uppercase">2:00 PM</p>
+                  <p className="text-[10px] font-bold dark:text-white line-clamp-1">Alex Feedback Session</p>
+                </div>
+              )}
+              {i === 20 && (
+                <div className="mt-2 p-2 bg-green-100 border border-green-200 rounded-lg">
+                  <p className="text-[10px] font-black text-green-700 uppercase">9:00 AM</p>
+                  <p className="text-[10px] font-bold text-green-800 line-clamp-1">Clinical Rounds</p>
+                </div>
+              )}
             </div>
           ))}
         </div>
-      </div>
-    </div>
-  );
-
-  const renderResources = () => (
-    <div className="animate-in fade-in duration-500 space-y-8">
-      <div><h2 className="text-2xl font-black dark:text-white">Clinical Resources</h2><p className="text-[#616f89] dark:text-gray-400">Essential tools and references for medical education.</p></div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {[
-          { icon: 'clinical_notes', title: 'Clinical Guidelines', items: ['AHA Hypertension 2024', 'ADA Diabetes Care', 'GOLD COPD Guidelines'], color: 'blue' },
-          { icon: 'pill', title: 'Pharmacology', items: ['Epocrates', 'Micromedex', 'Antibiotic Sanford Guide'], color: 'green' },
-          { icon: 'monitoring', title: 'Imaging & EKG', items: ['Radiopaedia', 'EKG Academy', 'Chest X-Ray Basics'], color: 'purple' },
-        ].map((res, i) => (
-          <div key={i} className="bg-white dark:bg-[#1a202c] rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm">
-            <div className={`size-12 rounded-xl bg-${res.color}-50 dark:bg-${res.color}-900/20 text-${res.color}-600 flex items-center justify-center mb-4`}><span className="material-symbols-outlined text-3xl">{res.icon}</span></div>
-            <h3 className="text-xl font-bold dark:text-white mb-4">{res.title}</h3>
-            <ul className="space-y-3">
-              {res.items.map((item, j) => (
-                <li key={j} className="flex items-center gap-3 text-sm text-[#616f89] dark:text-gray-400 hover:text-primary cursor-pointer transition-colors group">
-                  <span className="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span> {item}
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
       </div>
     </div>
   );
@@ -374,87 +333,99 @@ const App: React.FC = () => {
     switch (currentView) {
       case 'Dashboard': return renderDashboard();
       case 'Schedule': return renderSchedule();
-      case 'Resources': return renderResources();
       case 'Concepts': return (
         <div className="animate-in fade-in duration-300">
-          <div className="mb-8"><h2 className="text-2xl font-bold dark:text-white">Teaching History</h2><p className="text-[#616f89] dark:text-gray-400">Medical concepts covered with {currentStudent.name}.</p></div>
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold dark:text-white">Teaching History</h2>
+            <p className="text-[#616f89] dark:text-gray-400">A track of medical concepts covered with {student.name}.</p>
+          </div>
           <div className="grid gap-4">
-            {evaluations.flatMap(e => (e.taughtConcepts || []).map(c => ({ c, date: e.date, encounter: e.title }))).map((item, idx) => (
-              <div key={idx} className="bg-white dark:bg-[#1a202c] p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm flex items-center justify-between group hover:border-primary transition-all">
-                <div className="flex items-center gap-4"><div className="size-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors"><span className="material-symbols-outlined">lightbulb</span></div><div><h4 className="font-bold dark:text-white">{item.c}</h4><p className="text-xs text-gray-500">{item.encounter}</p></div></div>
-                <span className="text-xs font-bold text-gray-400 uppercase">{item.date}</span>
-              </div>
-            ))}
+            {evaluations.flatMap(e => e.taughtConcepts || []).length > 0 ? (
+              evaluations.flatMap(e => (e.taughtConcepts || []).map(c => ({ c, date: e.date, encounter: e.title }))).map((item, idx) => (
+                <div key={idx} className="bg-white dark:bg-[#1a202c] p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm flex items-center justify-between group hover:border-primary transition-colors">
+                  <div className="flex items-center gap-4">
+                    <div className="size-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+                      <span className="material-symbols-outlined">lightbulb</span>
+                    </div>
+                    <div><h4 className="font-bold dark:text-white">{item.c}</h4><p className="text-xs text-gray-500">{item.encounter}</p></div>
+                  </div>
+                  <span className="text-xs font-bold text-gray-400 uppercase">{item.date}</span>
+                </div>
+              ))
+            ) : <p className="text-center py-20 text-gray-500">No concepts documented yet.</p>}
           </div>
         </div>
       );
       case 'AI Summary': return (
         <div className="animate-in fade-in duration-300">
           <div className="flex justify-between items-end mb-8 no-print">
-            <div><h2 className="text-2xl font-bold dark:text-white">Performance Report</h2><p className="text-[#616f89] dark:text-gray-400">AI-generated overview for {currentStudent.name}.</p></div>
+            <div><h2 className="text-2xl font-bold dark:text-white">Performance Report</h2><p className="text-[#616f89] dark:text-gray-400">AI-generated summary based on evaluations.</p></div>
             <button onClick={generateAISummary} disabled={isGeneratingSummary} className="px-6 py-2 bg-primary text-white font-bold rounded-lg shadow-md hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2">
               {isGeneratingSummary ? 'Analyzing...' : <><span className="material-symbols-outlined text-lg">auto_awesome</span> Generate Summary</>}
             </button>
           </div>
           {aiSummary ? (
             <div className="bg-white dark:bg-[#1a202c] p-10 rounded-2xl shadow-xl border border-gray-100 print:p-0">
-              <div className="border-b-2 border-primary pb-6 mb-10"><h1 className="text-3xl font-black text-primary uppercase">Evaluation Summary: {currentStudent.name}</h1></div>
+              <div className="border-b-2 border-primary pb-6 mb-10"><h1 className="text-3xl font-black text-primary">ROTATION SUMMARY: {student.name}</h1></div>
               <div className="prose prose-blue max-w-none dark:prose-invert whitespace-pre-wrap leading-relaxed">{aiSummary}</div>
             </div>
-          ) : <div className="text-center py-20 bg-gray-50 dark:bg-gray-800 rounded-2xl border-2 border-dashed border-gray-200">No summary generated. Click "Generate Summary" above.</div>}
+          ) : <div className="text-center py-20 bg-gray-50 dark:bg-gray-800 rounded-2xl border-2 border-dashed border-gray-200">No summary generated. Click the button above.</div>}
         </div>
       );
       case 'Students': return (
-        <div className="animate-in fade-in duration-300">
-          <ProfileHeader student={currentStudent} onAvatarChange={handleUpdateAvatar} />
-          <div className="flex items-center justify-between gap-4 mb-6">
-            <h2 className="text-xl font-bold dark:text-white">Rotation Milestones</h2>
+        <>
+          <ProfileHeader student={student} />
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+            <h2 className="text-xl font-bold dark:text-white">Progress History</h2>
             <div className="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
-              {(['early', 'mid', 'late'] as Phase[]).map(p => <button key={p} onClick={() => setActivePhase(p)} className={`px-5 py-2 rounded-md text-sm font-medium transition-all ${activePhase === p ? 'bg-white dark:bg-primary dark:text-white shadow-sm font-bold' : 'text-[#616f89]'}`}>{p.charAt(0).toUpperCase() + p.slice(1)} Phase</button>)}
+              {(['early', 'mid', 'late'] as Phase[]).map((phase) => (
+                <button key={phase} onClick={() => setActivePhase(phase)} className={`px-5 py-2 rounded-md text-sm font-medium transition-all ${activePhase === phase ? 'bg-white dark:bg-primary dark:text-white text-primary shadow-sm font-bold' : 'text-[#616f89]'}`}>
+                  {phase.charAt(0).toUpperCase() + phase.slice(1)} Phase
+                </button>
+              ))}
             </div>
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <div className="lg:col-span-4"><CompetenciesCard competencies={competencies[activePhase]} onToggle={handleToggleCompetency} phaseName={activePhase} /></div>
-            <div className="lg:col-span-4"><EvaluationsCard evaluations={evaluations} onAddEvaluation={handleOpenEvalModal} onEditEvaluation={handleEditEval} /></div>
-            <div className="lg:col-span-4"><RightSidebar assignments={assignments} onToggleAssignment={handleToggleAssignment} conditions={conditions} onAddCondition={l => setConditions([...conditions, { label: l, theme: 'gray' }])} /></div>
+            <div className="lg:col-span-4"><EvaluationsCard evaluations={evaluations} onAddEvaluation={handleOpenEvalModal} onEditEvaluation={handleEditEval} onViewAll={() => setIsAllEvalsModalOpen(true)} /></div>
+            <div className="lg:col-span-4"><RightSidebar assignments={assignments} onToggleAssignment={handleToggleAssignment} conditions={conditions} onAddCondition={(label) => setConditions([...conditions, { label, theme: 'gray' }])} /></div>
           </div>
-        </div>
+        </>
       );
       default: return null;
     }
   };
 
+  const skillLabels: Record<keyof EvaluationSkills, string> = { historyTaking: "History Taking", physicalExam: "Physical Exam", reasoning: "Clinical Reasoning", diagnostics: "Diagnostics", treatmentPlan: "Treatment Plan" };
+
   return (
-    <div className="min-h-screen flex flex-col font-display bg-background-light dark:bg-background-dark">
-      <Header 
-        currentView={currentView} 
-        onNavigate={setCurrentView} 
-        onExport={handleExport}
-        onImport={handleImport}
-      />
+    <div className="min-h-screen flex flex-col font-display selection:bg-primary/20">
+      <Header currentView={currentView} onNavigate={setCurrentView} />
+      
       {isEvalModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-white dark:bg-[#1a202c] w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95">
-            <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
-              <h3 className="text-xl font-bold dark:text-white">New Evaluation Entry</h3>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-[#1a202c] w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl animate-in zoom-in-95">
+            <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-[#1a202c] z-10">
+              <h3 className="text-xl font-bold dark:text-white">{editingEvalId ? 'Edit' : 'New'} Evaluation</h3>
               <button onClick={() => setIsEvalModalOpen(false)}><span className="material-symbols-outlined text-gray-400">close</span></button>
             </div>
             <form onSubmit={handleSubmitEvaluation} className="p-6 space-y-6">
               <div className="grid grid-cols-2 gap-4">
-                <div><label className="text-xs font-bold uppercase text-gray-400">Date</label><input type="date" required value={evalForm.date} onChange={e => setEvalForm({ ...evalForm, date: e.target.value })} className="w-full mt-1 rounded-lg border-gray-300 dark:bg-gray-800 dark:border-gray-700" /></div>
-                <div><label className="text-xs font-bold uppercase text-gray-400">Rating (1-5)</label><input type="number" step="0.1" max="5" min="1" required value={evalForm.score} onChange={e => setEvalForm({ ...evalForm, score: e.target.value })} className="w-full mt-1 rounded-lg border-primary/30 dark:bg-gray-800" /></div>
+                <div><label className="text-sm font-bold">Date</label><input type="date" required value={evalForm.date} onChange={e => setEvalForm({ ...evalForm, date: e.target.value })} className="w-full rounded-lg border-gray-300 dark:bg-gray-800" /></div>
+                <div><label className="text-sm font-bold">Rating (1-5)</label><input type="number" step="0.1" max="5" min="1" required value={evalForm.score} onChange={e => setEvalForm({ ...evalForm, score: e.target.value })} className="w-full rounded-lg border-primary/30 dark:bg-gray-800" /></div>
               </div>
-              <div><label className="text-xs font-bold uppercase text-gray-400">Encounter Narrative</label><textarea required rows={4} value={evalForm.comment} onChange={e => setEvalForm({ ...evalForm, comment: e.target.value })} className="w-full mt-1 rounded-lg border-gray-300 dark:bg-gray-800 dark:border-gray-700" placeholder="Describe clinical performance..."></textarea></div>
-              <div className="flex gap-4 pt-2"><button type="button" onClick={() => setIsEvalModalOpen(false)} className="flex-1 py-3 border rounded-lg font-bold">Cancel</button><button type="submit" className="flex-1 py-3 bg-primary text-white font-bold rounded-lg shadow-lg hover:bg-blue-700">Save Evaluation</button></div>
+              <div><label className="text-sm font-bold">Feedback</label><textarea required rows={4} value={evalForm.comment} onChange={e => setEvalForm({ ...evalForm, comment: e.target.value })} className="w-full rounded-lg border-gray-300 dark:bg-gray-800" placeholder="Summary..."></textarea></div>
+              <div className="flex gap-3"><button type="button" onClick={() => setIsEvalModalOpen(false)} className="flex-1 py-3 border rounded-lg">Cancel</button><button type="submit" className="flex-1 py-3 bg-primary text-white font-bold rounded-lg shadow-lg">Save</button></div>
             </form>
           </div>
         </div>
       )}
+
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 no-print">
         <nav className="flex items-center text-sm text-[#616f89] mb-6">
-          <button onClick={() => setCurrentView('Dashboard')} className="hover:text-primary">MedTrack</button>
+          <button onClick={() => setCurrentView('Dashboard')} className="hover:text-primary transition-colors">MedTrack</button>
           <span className="material-symbols-outlined mx-2 text-base">chevron_right</span>
-          <span className="font-bold text-[#111318] dark:text-white">{currentView}</span>
+          <span className="font-medium text-[#111318] dark:text-white">{currentView}</span>
         </nav>
         {renderContent()}
       </main>
