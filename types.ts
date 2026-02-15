@@ -23,6 +23,11 @@ export interface EvaluationSkillComments {
   treatmentPlan?: string;
 }
 
+export interface Preceptor {
+  name: string;
+  avatar: string;
+}
+
 export interface Evaluation {
   id: string;
   title: string;
