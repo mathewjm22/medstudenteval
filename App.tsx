@@ -658,41 +658,59 @@ const App: React.FC = () => {
                     { key: 'reasoning', label: 'Clinical Reasoning' },
                     { key: 'diagnostics', label: 'Diagnostics & Results' },
                     { key: 'treatmentPlan', label: 'Treatment & Management Plan' }
-                  ].map((skill) => (
-                    <div key={skill.key} className="p-4 bg-gray-50 dark:bg-gray-800/30 rounded-xl border border-gray-100 dark:border-gray-700">
-                      <div className="flex flex-col md:flex-row gap-4 items-start">
-                        <div className="w-full md:w-1/3">
-                          <label className="text-xs font-bold uppercase text-gray-500">{skill.label}</label>
-                          <div className="flex items-center gap-3 mt-2">
+                  ].map((skill) => {
+                    const isNA = evalForm.skills[skill.key as keyof EvaluationSkills] === null;
+                    return (
+                      <div key={skill.key} className="p-4 bg-gray-50 dark:bg-gray-800/30 rounded-xl border border-gray-100 dark:border-gray-700">
+                        <div className="flex flex-col md:flex-row gap-4 items-start">
+                          <div className="w-full md:w-1/3">
+                            <div className="flex items-center justify-between">
+                              <label className="text-xs font-bold uppercase text-gray-500">{skill.label}</label>
+                              <div className="flex items-center gap-1.5">
+                                <input 
+                                  type="checkbox" 
+                                  id={`na-${skill.key}`}
+                                  checked={isNA}
+                                  onChange={e => setEvalForm({
+                                    ...evalForm,
+                                    skills: { ...evalForm.skills, [skill.key]: e.target.checked ? null : 4 }
+                                  })}
+                                  className="size-3.5 rounded border-gray-300 text-primary focus:ring-primary/20"
+                                />
+                                <label htmlFor={`na-${skill.key}`} className="text-[10px] font-black text-gray-400 uppercase cursor-pointer">N/A</label>
+                              </div>
+                            </div>
+                            <div className={`flex items-center gap-3 mt-2 ${isNA ? 'opacity-30 pointer-events-none' : ''}`}>
+                              <input 
+                                type="range" 
+                                min="1" max="5" 
+                                value={evalForm.skills[skill.key as keyof EvaluationSkills] || 3} 
+                                onChange={e => setEvalForm({
+                                  ...evalForm,
+                                  skills: { ...evalForm.skills, [skill.key]: parseInt(e.target.value) }
+                                })}
+                                className="flex-1 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                              />
+                              <span className="font-black text-blue-600 w-4">{evalForm.skills[skill.key as keyof EvaluationSkills]}</span>
+                            </div>
+                          </div>
+                          <div className="w-full md:w-2/3">
+                            <label className="text-[10px] font-bold uppercase text-gray-400">Specific Comments for {skill.label}</label>
                             <input 
-                              type="range" 
-                              min="1" max="5" 
-                              value={evalForm.skills[skill.key as keyof EvaluationSkills] || 3} 
+                              type="text"
+                              value={evalForm.skillComments[skill.key as keyof EvaluationSkillComments] || ''}
                               onChange={e => setEvalForm({
                                 ...evalForm,
-                                skills: { ...evalForm.skills, [skill.key]: parseInt(e.target.value) }
+                                skillComments: { ...evalForm.skillComments, [skill.key]: e.target.value }
                               })}
-                              className="flex-1 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                              className="w-full mt-1 text-sm bg-white dark:bg-gray-800 rounded-lg border-gray-200 dark:border-gray-700 dark:text-white"
+                              placeholder="Optional specifics..."
                             />
-                            <span className="font-black text-blue-600 w-4">{evalForm.skills[skill.key as keyof EvaluationSkills]}</span>
                           </div>
                         </div>
-                        <div className="w-full md:w-2/3">
-                          <label className="text-[10px] font-bold uppercase text-gray-400">Specific Comments for {skill.label}</label>
-                          <input 
-                            type="text"
-                            value={evalForm.skillComments[skill.key as keyof EvaluationSkillComments] || ''}
-                            onChange={e => setEvalForm({
-                              ...evalForm,
-                              skillComments: { ...evalForm.skillComments, [skill.key]: e.target.value }
-                            })}
-                            className="w-full mt-1 text-sm bg-white dark:bg-gray-800 rounded-lg border-gray-200 dark:border-gray-700"
-                            placeholder="Optional specifics..."
-                          />
-                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
@@ -729,6 +747,31 @@ const App: React.FC = () => {
                 <span className="text-[10px] font-black text-primary uppercase tracking-widest block mb-2">Preceptor Notes</span>
                 <p className="text-sm text-[#4b5563] dark:text-gray-300 leading-relaxed italic">"{viewingEval.comment}"</p>
               </div>
+
+              {viewingEval.skills && (
+                <div className="space-y-3">
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Skills Assessment</span>
+                  <div className="grid grid-cols-1 gap-2">
+                    {[
+                      { key: 'historyTaking', label: 'History Taking' },
+                      { key: 'physicalExam', label: 'Physical Exam' },
+                      { key: 'reasoning', label: 'Reasoning' },
+                      { key: 'diagnostics', label: 'Diagnostics' },
+                      { key: 'treatmentPlan', label: 'Plan' }
+                    ].map((s) => {
+                      const val = viewingEval.skills?.[s.key as keyof EvaluationSkills];
+                      return (
+                        <div key={s.key} className="flex items-center justify-between text-xs py-1.5 border-b border-gray-100 dark:border-gray-700 last:border-0">
+                          <span className="text-gray-500 font-medium">{s.label}</span>
+                          <span className={`font-black ${val === null ? 'text-gray-300 uppercase italic' : 'text-primary'}`}>
+                            {val === null ? 'N/A' : `${val}/5`}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {viewingEval.taughtConcepts && viewingEval.taughtConcepts.length > 0 && (
                 <div>
