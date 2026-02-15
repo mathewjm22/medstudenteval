@@ -49,6 +49,19 @@ const App: React.FC = () => {
     }
   });
 
+  // Automatically calculate Overall Score based on non-N/A skills
+  useEffect(() => {
+    const activeSkills = Object.values(evalForm.skills).filter(v => v !== null) as number[];
+    if (activeSkills.length > 0) {
+      const avg = activeSkills.reduce((a, b) => a + b, 0) / activeSkills.length;
+      const formattedAvg = avg.toFixed(1);
+      // Only update if it's different to avoid loops
+      if (evalForm.score !== formattedAvg) {
+        setEvalForm(prev => ({ ...prev, score: formattedAvg }));
+      }
+    }
+  }, [evalForm.skills]);
+
   // Preceptor Modal Form State
   const [preceptorForm, setPreceptorForm] = useState<Preceptor>({ ...preceptor });
 
@@ -589,20 +602,14 @@ const App: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-bold uppercase text-gray-400">Overall Score (1-5)</label>
+                    <label className="text-xs font-bold uppercase text-gray-400">Calculated Score</label>
                     <div className="flex items-center gap-2 mt-1">
-                      <input 
-                        type="range" 
-                        step="0.1" 
-                        max="5" 
-                        min="1" 
-                        required 
-                        value={evalForm.score} 
-                        onChange={e => setEvalForm({ ...evalForm, score: e.target.value })} 
-                        className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary" 
-                      />
+                      <div className="flex-1 h-2 bg-gray-200 rounded-lg relative">
+                        <div className="absolute top-0 left-0 h-full bg-primary rounded-lg transition-all" style={{ width: `${(parseFloat(evalForm.score) / 5) * 100}%` }}></div>
+                      </div>
                       <span className="text-lg font-black text-primary w-8 text-center">{evalForm.score}</span>
                     </div>
+                    <p className="text-[10px] text-gray-400 mt-1 uppercase font-bold italic">* Auto-calculated from active skills below</p>
                   </div>
                 </div>
               </div>
@@ -661,26 +668,23 @@ const App: React.FC = () => {
                   ].map((skill) => {
                     const isNA = evalForm.skills[skill.key as keyof EvaluationSkills] === null;
                     return (
-                      <div key={skill.key} className="p-4 bg-gray-50 dark:bg-gray-800/30 rounded-xl border border-gray-100 dark:border-gray-700">
+                      <div key={skill.key} className={`p-4 rounded-xl border transition-all ${isNA ? 'bg-gray-100 dark:bg-gray-900 border-dashed border-gray-300 dark:border-gray-800' : 'bg-gray-50 dark:bg-gray-800/30 border-gray-100 dark:border-gray-700'}`}>
                         <div className="flex flex-col md:flex-row gap-4 items-start">
                           <div className="w-full md:w-1/3">
-                            <div className="flex items-center justify-between">
-                              <label className="text-xs font-bold uppercase text-gray-500">{skill.label}</label>
-                              <div className="flex items-center gap-1.5">
-                                <input 
-                                  type="checkbox" 
-                                  id={`na-${skill.key}`}
-                                  checked={isNA}
-                                  onChange={e => setEvalForm({
-                                    ...evalForm,
-                                    skills: { ...evalForm.skills, [skill.key]: e.target.checked ? null : 4 }
-                                  })}
-                                  className="size-3.5 rounded border-gray-300 text-primary focus:ring-primary/20"
-                                />
-                                <label htmlFor={`na-${skill.key}`} className="text-[10px] font-black text-gray-400 uppercase cursor-pointer">N/A</label>
-                              </div>
+                            <div className="flex items-center justify-between mb-2">
+                              <label className={`text-xs font-bold uppercase ${isNA ? 'text-gray-400' : 'text-gray-500'}`}>{skill.label}</label>
+                              <button 
+                                type="button"
+                                onClick={() => setEvalForm({
+                                  ...evalForm,
+                                  skills: { ...evalForm.skills, [skill.key]: isNA ? 4 : null }
+                                })}
+                                className={`px-3 py-1 rounded-md text-[10px] font-black uppercase transition-all border ${isNA ? 'bg-primary text-white border-primary shadow-sm' : 'bg-white dark:bg-gray-800 text-gray-400 border-gray-200 dark:border-gray-700 hover:text-primary hover:border-primary'}`}
+                              >
+                                {isNA ? 'Included' : 'Mark N/A'}
+                              </button>
                             </div>
-                            <div className={`flex items-center gap-3 mt-2 ${isNA ? 'opacity-30 pointer-events-none' : ''}`}>
+                            <div className={`flex items-center gap-3 ${isNA ? 'opacity-20 pointer-events-none' : ''}`}>
                               <input 
                                 type="range" 
                                 min="1" max="5" 
@@ -691,11 +695,11 @@ const App: React.FC = () => {
                                 })}
                                 className="flex-1 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500"
                               />
-                              <span className="font-black text-blue-600 w-4">{evalForm.skills[skill.key as keyof EvaluationSkills]}</span>
+                              <span className="font-black text-blue-600 w-4">{evalForm.skills[skill.key as keyof EvaluationSkills] || '-'}</span>
                             </div>
                           </div>
                           <div className="w-full md:w-2/3">
-                            <label className="text-[10px] font-bold uppercase text-gray-400">Specific Comments for {skill.label}</label>
+                            <label className={`text-[10px] font-bold uppercase ${isNA ? 'text-gray-300' : 'text-gray-400'}`}>Specific Comments for {skill.label}</label>
                             <input 
                               type="text"
                               value={evalForm.skillComments[skill.key as keyof EvaluationSkillComments] || ''}
@@ -703,8 +707,9 @@ const App: React.FC = () => {
                                 ...evalForm,
                                 skillComments: { ...evalForm.skillComments, [skill.key]: e.target.value }
                               })}
-                              className="w-full mt-1 text-sm bg-white dark:bg-gray-800 rounded-lg border-gray-200 dark:border-gray-700 dark:text-white"
-                              placeholder="Optional specifics..."
+                              disabled={isNA}
+                              className={`w-full mt-1 text-sm rounded-lg border-gray-200 dark:border-gray-700 dark:text-white ${isNA ? 'bg-transparent border-gray-100 dark:border-gray-800 opacity-30' : 'bg-white dark:bg-gray-800'}`}
+                              placeholder={isNA ? "N/A" : "Optional specifics..."}
                             />
                           </div>
                         </div>
@@ -763,8 +768,8 @@ const App: React.FC = () => {
                       return (
                         <div key={s.key} className="flex items-center justify-between text-xs py-1.5 border-b border-gray-100 dark:border-gray-700 last:border-0">
                           <span className="text-gray-500 font-medium">{s.label}</span>
-                          <span className={`font-black ${val === null ? 'text-gray-300 uppercase italic' : 'text-primary'}`}>
-                            {val === null ? 'N/A' : `${val}/5`}
+                          <span className={`font-black ${val === null || val === undefined ? 'text-gray-300 uppercase italic' : 'text-primary'}`}>
+                            {val === null || val === undefined ? 'N/A' : `${val}/5`}
                           </span>
                         </div>
                       );
