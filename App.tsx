@@ -23,6 +23,95 @@ const App: React.FC = () => {
     name: "Dr. Preceptor (You)",
     avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuAu_bA54j7E6jHFqEr44Dh7hoeMipzwNO5SAsYcZ5ZGmNFADIgn685yOJigN8VfHo_2yuoGMg3BHVXz4wJpXBYhA8Jh5DJ_2v9-OTD0FhiqPNoU7W1pK5T7IdSRdTsnta6FN5qzN-KZErGa0oCo6lN_w9fRatQXnF81CjUH4LUp13xquR3nYCcH_ylWA9vZz_-nIidgsPYjG1MeznQRUY71svahsV1Eck_gGDd3lDdIB4daCqGrKzmvUQslvPHNIvgR6xHN_w4ODkIu"
   });
+
+  // Re-ordered state definitions to avoid temporal dead zone errors
+  const [students, setStudents] = useState<Student[]>([
+    {
+      name: "Alex Lockwood",
+      year: "MS3",
+      status: "Active",
+      rotation: "Outpatient Internal Medicine Rotation",
+      startDate: "Jan 4",
+      endDate: "Feb 15",
+      week: 3,
+      patientsCount: 2,
+      avgEval: 4.5,
+      progressPercent: 68,
+      weeksRemaining: 4,
+      avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuDg63s5VzT-QBwYhSmVQHIUkYILtCa8XsPy9WXSWvgBsp2YgOu80Xxu1igJO1eVy9WxSu8MIGmlQ9QwooIo-j5DtJN5cEu2qELWHQL-IZjW7G7_hua8PaS2BGZQGGfqNVEyC08RB_iIZfXjdelMYYni6yJrqxdW7bVLivcrmO1UZYjiXWJlu-J_97o5G1t-PA7jlDfQAmGZPl3H8E5RuL8VxVjEYK0-OaEjaAtOrgEdhoulu6RS81I-wpTS8Q1WdAJDxnuYewZxbwf-"
+    },
+    {
+      name: "Jamie Vance",
+      year: "MS4",
+      status: "Active",
+      rotation: "Inpatient Internal Medicine Rotation",
+      startDate: "Jan 10",
+      endDate: "Feb 28",
+      week: 2,
+      patientsCount: 8,
+      avgEval: 4.8,
+      progressPercent: 42,
+      weeksRemaining: 6,
+      avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuCc5TyV6hjONVHhaASBdgm-ptO0sizLYXAfn0K9XZYcuSLVoz-4NZ_jn0fBb4hdVM5-84BOyv-Cj62VwIfnMy11slnhsfBdrVcAWvR428pptkfMIQ51HM6a0TJ9GogCNylFuyFcju9mxS2v1zh-UJL0oQk-F2SO5ISe3h2a8veuLbxRjw38SbKBiZ7HigJoHyUSKEtEE58wX3fJT2mdcOy2ZWwaurt23ShhRCH-mh8ss9LLxY4pIopSOPHfZzmnw08sOZA8uzLMr8jv"
+    }
+  ]);
+
+  const [evaluations, setEvaluations] = useState<Evaluation[]>([
+    {
+      id: 'e1',
+      title: "Patient Encounter #12",
+      date: "Jan 20, 2024",
+      score: 4.0,
+      comment: "Alex showed great rapport with the patient. History taking was thorough, though focused a bit too much on social history initially. Needs to narrow the differential sooner.",
+      conditions: ["#Hypertension", "#Anxiety"],
+      taughtConcepts: ["Approach to HTN management", "Anxiety screening in primary care"],
+      skills: { historyTaking: 4, physicalExam: 5, reasoning: 3, diagnostics: 4, treatmentPlan: 4 },
+      skillComments: { historyTaking: "Very thorough, inclusive of family history.", reasoning: "Needs more work on narrowing differentials." },
+      evaluator: {
+        name: "Dr. Sarah Smith",
+        avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuBmVtH_YuWs8lWp4tVrjO9vJzvjJzbNh4oT-y5w2KJvTwQ16J1qAk7bihvKLps5j_vBxCUZ3OepfUBA-qTULLTpIPPh-2JnwwpNMBSlhfq73_pL7J8ZnS0WbKc4dJAwyR4gy78EIPWzRRUXryE5pZJ_Fxd1uw3bOheWqdCJvm4xwWpdJfku3oFmHe8IBj1CTXZJ4-9LV7G6C5NhEubOTi5OSZPLBIK6j__29SvNvVHDu3UtKxll1_Uqc-NRbaIuRKvcAjmC_3ZFYCY1"
+      }
+    },
+    {
+      id: 'e2',
+      title: "Case Presentation: Diabetes",
+      date: "Jan 18, 2024",
+      score: 5.0,
+      comment: "Excellent presentation. Concise and covered all key points of the management plan. Suggested appropriate medication adjustments.",
+      conditions: ["#Type 2 Diabetes"],
+      taughtConcepts: ["Oral hypoglycemics titration", "Diabetes dietary counseling"],
+      skills: { historyTaking: 5, physicalExam: 4, reasoning: 5, diagnostics: 5, treatmentPlan: 5 },
+      evaluator: {
+        name: "Dr. David Chen",
+        avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuCc5TyV6hjONVHhaASBdgm-ptO0sizLYXAfn0K9XZYcuSLVoz-4NZ_jn0fBb4hdVM5-84BOyv-Cj62VwIfnMy11slnhsfBdrVcAWvR428pptkfMIQ51HM6a0TJ9GogCNylFuyFcju9mxS2v1zh-UJL0oQk-F2SO5ISe3h2a8veuLbxRjw38SbKBiZ7HigJoHyUSKEtEE58wX3fJT2mdcOy2ZWwaurt23ShhRCH-mh8ss9LLxY4pIopSOPHfZzmnw08sOZA8uzLMr8jv"
+      }
+    }
+  ]);
+
+  const [competencies, setCompetencies] = useState<Record<Phase, Competency[]>>({
+    early: [
+      { id: 'e1', title: "Orientation to clinic workflow", isDone: true },
+      { id: 'e2', title: "Basic patient interview", isDone: true },
+    ],
+    mid: [
+      { id: 'm1', title: "Take a full telemedicine history", isDone: true },
+      { id: 'm2', title: "Document encounter in EMR", isDone: true },
+      { id: 'm3', title: "Manage acute hypertension", description: "Requires observation of at least 2 cases.", isDone: false, isHighlighted: true },
+      { id: 'm4', title: "Present assessment and plan concisely", isDone: false },
+      { id: 'm5', title: "Deliver bad news (Simulation)", isDone: false },
+    ],
+    late: [
+      { id: 'l1', title: "Independent patient management", isDone: false },
+      { id: 'l2', title: "Complex discharge planning", isDone: false },
+    ]
+  });
+
+  const [assignments, setAssignments] = useState<Assignment[]>([
+    { id: 'a1', title: "Harrison's Principles Ch. 12", dueDate: "Feb 2", status: 'pending' },
+    { id: 'a2', title: "Guidelines for COPD", completedDate: "Jan 15", status: 'done' },
+  ]);
+
+  const currentStudent = students.find(s => s.name === selectedStudentId) || students[0];
   
   // Evaluation Modal Form State
   const [editingEvalId, setEditingEvalId] = useState<string | null>(null);
@@ -75,94 +164,28 @@ const App: React.FC = () => {
     { label: '#Back Pain', theme: 'gray' as const },
   ]);
 
-  // State for dynamic content
-  const [competencies, setCompetencies] = useState<Record<Phase, Competency[]>>({
-    early: [
-      { id: 'e1', title: "Orientation to clinic workflow", isDone: true },
-      { id: 'e2', title: "Basic patient interview", isDone: true },
-    ],
-    mid: [
-      { id: 'm1', title: "Take a full telemedicine history", isDone: true },
-      { id: 'm2', title: "Document encounter in EMR", isDone: true },
-      { id: 'm3', title: "Manage acute hypertension", description: "Requires observation of at least 2 cases.", isDone: false, isHighlighted: true },
-      { id: 'm4', title: "Present assessment and plan concisely", isDone: false },
-      { id: 'm5', title: "Deliver bad news (Simulation)", isDone: false },
-    ],
-    late: [
-      { id: 'l1', title: "Independent patient management", isDone: false },
-      { id: 'l2', title: "Complex discharge planning", isDone: false },
-    ]
-  });
+  // Sync conditions from evaluations automatically
+  useEffect(() => {
+    // FIX: Moved evaluations state declaration above this useEffect
+    const allEvalConditions = evaluations.flatMap(e => e.conditions || []);
+    if (allEvalConditions.length === 0) return;
 
-  const [assignments, setAssignments] = useState<Assignment[]>([
-    { id: 'a1', title: "Harrison's Principles Ch. 12", dueDate: "Feb 2", status: 'pending' },
-    { id: 'a2', title: "Guidelines for COPD", completedDate: "Jan 15", status: 'done' },
-  ]);
-
-  const [evaluations, setEvaluations] = useState<Evaluation[]>([
-    {
-      id: 'e1',
-      title: "Patient Encounter #12",
-      date: "Jan 20, 2024",
-      score: 4.0,
-      comment: "Alex showed great rapport with the patient. History taking was thorough, though focused a bit too much on social history initially. Needs to narrow the differential sooner.",
-      conditions: ["#Hypertension", "#Anxiety"],
-      taughtConcepts: ["Approach to HTN management", "Anxiety screening in primary care"],
-      skills: { historyTaking: 4, physicalExam: 5, reasoning: 3, diagnostics: 4, treatmentPlan: 4 },
-      skillComments: { historyTaking: "Very thorough, inclusive of family history.", reasoning: "Needs more work on narrowing differentials." },
-      evaluator: {
-        name: "Dr. Sarah Smith",
-        avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuBmVtH_YuWs8lWp4tVrjO9vJzvjJzbNh4oT-y5w2KJvTwQ16J1qAk7bihvKLps5j_vBxCUZ3OepfUBA-qTULLTpIPPh-2JnwwpNMBSlhfq73_pL7J8ZnS0WbKc4dJAwyR4gy78EIPWzRRUXryE5pZJ_Fxd1uw3bOheWqdCJvm4xwWpdJfku3oFmHe8IBj1CTXZJ4-9LV7G6C5NhEubOTi5OSZPLBIK6j__29SvNvVHDu3UtKxll1_Uqc-NRbaIuRKvcAjmC_3ZFYCY1"
-      }
-    },
-    {
-      id: 'e2',
-      title: "Case Presentation: Diabetes",
-      date: "Jan 18, 2024",
-      score: 5.0,
-      comment: "Excellent presentation. Concise and covered all key points of the management plan. Suggested appropriate medication adjustments.",
-      conditions: ["#Type 2 Diabetes"],
-      taughtConcepts: ["Oral hypoglycemics titration", "Diabetes dietary counseling"],
-      skills: { historyTaking: 5, physicalExam: 4, reasoning: 5, diagnostics: 5, treatmentPlan: 5 },
-      evaluator: {
-        name: "Dr. David Chen",
-        avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuCc5TyV6hjONVHhaASBdgm-ptO0sizLYXAfn0K9XZYcuSLVoz-4NZ_jn0fBb4hdVM5-84BOyv-Cj62VwIfnMy11slnhsfBdrVcAWvR428pptkfMIQ51HM6a0TJ9GogCNylFuyFcju9mxS2v1zh-UJL0oQk-F2SO5ISe3h2a8veuLbxRjw38SbKBiZ7HigJoHyUSKEtEE58wX3fJT2mdcOy2ZWwaurt23ShhRCH-mh8ss9LLxY4pIopSOPHfZzmnw08sOZA8uzLMr8jv"
-      }
-    }
-  ]);
-
-  const [students, setStudents] = useState<Student[]>([
-    {
-      name: "Alex Lockwood",
-      year: "MS3",
-      status: "Active",
-      rotation: "Outpatient Internal Medicine Rotation",
-      startDate: "Jan 4",
-      endDate: "Feb 15",
-      week: 3,
-      patientsCount: 2,
-      avgEval: 4.5,
-      progressPercent: 68,
-      weeksRemaining: 4,
-      avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuDg63s5VzT-QBwYhSmVQHIUkYILtCa8XsPy9WXSWvgBsp2YgOu80Xxu1igJO1eVy9WxSu8MIGmlQ9QwooIo-j5DtJN5cEu2qELWHQL-IZjW7G7_hua8PaS2BGZQGGfqNVEyC08RB_iIZfXjdelMYYni6yJrqxdW7bVLivcrmO1UZYjiXWJlu-J_97o5G1t-PA7jlDfQAmGZPl3H8E5RuL8VxVjEYK0-OaEjaAtOrgEdhoulu6RS81I-wpTS8Q1WdAJDxnuYewZxbwf-"
-    },
-    {
-      name: "Jamie Vance",
-      year: "MS4",
-      status: "Active",
-      rotation: "Inpatient Internal Medicine Rotation",
-      startDate: "Jan 10",
-      endDate: "Feb 28",
-      week: 2,
-      patientsCount: 8,
-      avgEval: 4.8,
-      progressPercent: 42,
-      weeksRemaining: 6,
-      avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuCc5TyV6hjONVHhaASBdgm-ptO0sizLYXAfn0K9XZYcuSLVoz-4NZ_jn0fBb4hdVM5-84BOyv-Cj62VwIfnMy11slnhsfBdrVcAWvR428pptkfMIQ51HM6a0TJ9GogCNylFuyFcju9mxS2v1zh-UJL0oQk-F2SO5ISe3h2a8veuLbxRjw38SbKBiZ7HigJoHyUSKEtEE58wX3fJT2mdcOy2ZWwaurt23ShhRCH-mh8ss9LLxY4pIopSOPHfZzmnw08sOZA8uzLMr8jv"
-    }
-  ]);
-
-  const currentStudent = students.find(s => s.name === selectedStudentId) || students[0];
+    setConditions(prev => {
+      const existingLabels = new Set(prev.map(c => c.label));
+      let changed = false;
+      const mergedConditions = [...prev];
+      
+      allEvalConditions.forEach(label => {
+        if (!existingLabels.has(label)) {
+          mergedConditions.push({ label, theme: 'gray' });
+          existingLabels.add(label);
+          changed = true;
+        }
+      });
+      
+      return changed ? mergedConditions : prev;
+    });
+  }, [evaluations]);
 
   const handleUpdateAvatar = (newAvatar: string) => {
     setStudents(prev => prev.map(s => 
@@ -347,7 +370,7 @@ const App: React.FC = () => {
     <div className="animate-in fade-in duration-500 space-y-8">
       <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-3xl font-extrabold dark:text-white">Preceptor Dashboard</h1>
+          <h1>Preceptor Dashboard</h1>
           <p className="text-[#616f89] dark:text-gray-400">Team health and rotation status overview.</p>
         </div>
         <div className="flex gap-4">
