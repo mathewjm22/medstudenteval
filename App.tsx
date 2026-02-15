@@ -291,29 +291,31 @@ const App: React.FC = () => {
 
   const handleSubmitEvaluation = (e: React.FormEvent) => {
     e.preventDefault();
-    const score = parseFloat(evalForm.score);
+    const scoreNum = parseFloat(evalForm.score);
     const splitConditions = evalForm.conditions.split(',').map(c => c.trim()).filter(c => c !== '');
     const splitConcepts = evalForm.taughtConcepts.split(',').map(c => c.trim()).filter(c => c !== '');
     const displayDate = new Date(evalForm.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
+    const newEval: Evaluation = {
+      id: editingEvalId || Date.now().toString(),
+      title: evalForm.title,
+      date: displayDate,
+      score: isNaN(scoreNum) ? 4.0 : scoreNum,
+      comment: evalForm.comment,
+      conditions: splitConditions,
+      taughtConcepts: splitConcepts,
+      skills: { ...evalForm.skills },
+      skillComments: { ...evalForm.skillComments },
+      evaluator: { 
+        name: preceptor.name, 
+        avatar: preceptor.avatar 
+      }
+    };
+
     if (editingEvalId) {
-      setEvaluations(prev => prev.map(ev => ev.id === editingEvalId ? { ...ev, title: evalForm.title, date: displayDate, score: isNaN(score) ? 4.0 : score, comment: evalForm.comment, conditions: splitConditions, taughtConcepts: splitConcepts, skills: { ...evalForm.skills }, skillComments: { ...evalForm.skillComments } } : ev));
+      setEvaluations(prev => prev.map(ev => ev.id === editingEvalId ? newEval : ev));
     } else {
-      setEvaluations([{ 
-        id: Date.now().toString(), 
-        title: evalForm.title, 
-        date: displayDate, 
-        score: isNaN(score) ? 4.0 : score, 
-        comment: evalForm.comment, 
-        conditions: splitConditions, 
-        taughtConcepts: splitConcepts, 
-        skills: { ...evalForm.skills }, 
-        skillComments: { ...evalForm.skillComments }, 
-        evaluator: { 
-          name: preceptor.name, 
-          avatar: preceptor.avatar 
-        } 
-      }, ...evaluations]);
+      setEvaluations([newEval, ...evaluations]);
       // Update student patient count
       setStudents(prev => prev.map(s => s.name === currentStudent.name ? { ...s, patientsCount: s.patientsCount + 1 } : s));
     }
@@ -554,18 +556,152 @@ const App: React.FC = () => {
 
       {isEvalModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-white dark:bg-[#1a202c] w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95">
-            <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-800/50">
-              <h3 className="text-xl font-bold dark:text-white">New Evaluation Entry</h3>
+          <div className="bg-white dark:bg-[#1a202c] w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 flex flex-col max-h-[90vh]">
+            <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-800/50 shrink-0">
+              <h3 className="text-xl font-bold dark:text-white">{editingEvalId ? 'Edit Evaluation' : 'New Clinical Evaluation'}</h3>
               <button onClick={() => setIsEvalModalOpen(false)}><span className="material-symbols-outlined text-gray-400">close</span></button>
             </div>
-            <form onSubmit={handleSubmitEvaluation} className="p-6 space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div><label className="text-xs font-bold uppercase text-gray-400">Date</label><input type="date" required value={evalForm.date} onChange={e => setEvalForm({ ...evalForm, date: e.target.value })} className="w-full mt-1 rounded-lg border-gray-300 dark:bg-gray-800 dark:border-gray-700" /></div>
-                <div><label className="text-xs font-bold uppercase text-gray-400">Rating (1-5)</label><input type="number" step="0.1" max="5" min="1" required value={evalForm.score} onChange={e => setEvalForm({ ...evalForm, score: e.target.value })} className="w-full mt-1 rounded-lg border-primary/30 dark:bg-gray-800" /></div>
+            
+            <form onSubmit={handleSubmitEvaluation} className="p-6 space-y-8 overflow-y-auto">
+              {/* Section 1: Basic Information */}
+              <div>
+                <h4 className="text-xs font-black uppercase text-primary tracking-widest mb-4 border-b pb-1 border-primary/20">Basic Information</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="md:col-span-1">
+                    <label className="text-xs font-bold uppercase text-gray-400">Encounter Title</label>
+                    <input 
+                      type="text" 
+                      required 
+                      value={evalForm.title} 
+                      onChange={e => setEvalForm({ ...evalForm, title: e.target.value })} 
+                      className="w-full mt-1 rounded-lg border-gray-300 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                      placeholder="e.g. Patient Encounter #1"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold uppercase text-gray-400">Date</label>
+                    <input 
+                      type="date" 
+                      required 
+                      value={evalForm.date} 
+                      onChange={e => setEvalForm({ ...evalForm, date: e.target.value })} 
+                      className="w-full mt-1 rounded-lg border-gray-300 dark:bg-gray-800 dark:border-gray-700 dark:text-white" 
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold uppercase text-gray-400">Overall Score (1-5)</label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <input 
+                        type="range" 
+                        step="0.1" 
+                        max="5" 
+                        min="1" 
+                        required 
+                        value={evalForm.score} 
+                        onChange={e => setEvalForm({ ...evalForm, score: e.target.value })} 
+                        className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary" 
+                      />
+                      <span className="text-lg font-black text-primary w-8 text-center">{evalForm.score}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div><label className="text-xs font-bold uppercase text-gray-400">Encounter Narrative</label><textarea required rows={4} value={evalForm.comment} onChange={e => setEvalForm({ ...evalForm, comment: e.target.value })} className="w-full mt-1 rounded-lg border-gray-300 dark:bg-gray-800 dark:border-gray-700" placeholder="Describe clinical performance..."></textarea></div>
-              <div className="flex gap-4 pt-2"><button type="button" onClick={() => setIsEvalModalOpen(false)} className="flex-1 py-3 border rounded-lg font-bold">Cancel</button><button type="submit" className="flex-1 py-3 bg-primary text-white font-bold rounded-lg shadow-lg hover:bg-blue-700">Save Evaluation</button></div>
+
+              {/* Section 2: Clinical focus */}
+              <div>
+                <h4 className="text-xs font-black uppercase text-primary tracking-widest mb-4 border-b pb-1 border-primary/20">Clinical Focus</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="text-xs font-bold uppercase text-gray-400">Conditions Seen (comma separated)</label>
+                    <input 
+                      type="text" 
+                      value={evalForm.conditions} 
+                      onChange={e => setEvalForm({ ...evalForm, conditions: e.target.value })} 
+                      className="w-full mt-1 rounded-lg border-gray-300 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                      placeholder="#Hypertension, #Diabetes"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold uppercase text-gray-400">Concepts Taught (comma separated)</label>
+                    <input 
+                      type="text" 
+                      value={evalForm.taughtConcepts} 
+                      onChange={e => setEvalForm({ ...evalForm, taughtConcepts: e.target.value })} 
+                      className="w-full mt-1 rounded-lg border-gray-300 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                      placeholder="Management, ECG interpretation"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 3: Narrative */}
+              <div>
+                <h4 className="text-xs font-black uppercase text-primary tracking-widest mb-4 border-b pb-1 border-primary/20">Evaluation Narrative</h4>
+                <label className="text-xs font-bold uppercase text-gray-400">General Feedback</label>
+                <textarea 
+                  required 
+                  rows={4} 
+                  value={evalForm.comment} 
+                  onChange={e => setEvalForm({ ...evalForm, comment: e.target.value })} 
+                  className="w-full mt-1 rounded-lg border-gray-300 dark:bg-gray-800 dark:border-gray-700 dark:text-white" 
+                  placeholder="Describe student performance, strengths, and areas for growth..."
+                ></textarea>
+              </div>
+
+              {/* Section 4: Detailed Skills Assessment */}
+              <div>
+                <h4 className="text-xs font-black uppercase text-primary tracking-widest mb-4 border-b pb-1 border-primary/20">Skill-Specific Assessment</h4>
+                <div className="space-y-6">
+                  {[
+                    { key: 'historyTaking', label: 'History Taking' },
+                    { key: 'physicalExam', label: 'Physical Examination' },
+                    { key: 'reasoning', label: 'Clinical Reasoning' },
+                    { key: 'diagnostics', label: 'Diagnostics & Results' },
+                    { key: 'treatmentPlan', label: 'Treatment & Management Plan' }
+                  ].map((skill) => (
+                    <div key={skill.key} className="p-4 bg-gray-50 dark:bg-gray-800/30 rounded-xl border border-gray-100 dark:border-gray-700">
+                      <div className="flex flex-col md:flex-row gap-4 items-start">
+                        <div className="w-full md:w-1/3">
+                          <label className="text-xs font-bold uppercase text-gray-500">{skill.label}</label>
+                          <div className="flex items-center gap-3 mt-2">
+                            <input 
+                              type="range" 
+                              min="1" max="5" 
+                              value={evalForm.skills[skill.key as keyof EvaluationSkills] || 3} 
+                              onChange={e => setEvalForm({
+                                ...evalForm,
+                                skills: { ...evalForm.skills, [skill.key]: parseInt(e.target.value) }
+                              })}
+                              className="flex-1 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                            />
+                            <span className="font-black text-blue-600 w-4">{evalForm.skills[skill.key as keyof EvaluationSkills]}</span>
+                          </div>
+                        </div>
+                        <div className="w-full md:w-2/3">
+                          <label className="text-[10px] font-bold uppercase text-gray-400">Specific Comments for {skill.label}</label>
+                          <input 
+                            type="text"
+                            value={evalForm.skillComments[skill.key as keyof EvaluationSkillComments] || ''}
+                            onChange={e => setEvalForm({
+                              ...evalForm,
+                              skillComments: { ...evalForm.skillComments, [skill.key]: e.target.value }
+                            })}
+                            className="w-full mt-1 text-sm bg-white dark:bg-gray-800 rounded-lg border-gray-200 dark:border-gray-700"
+                            placeholder="Optional specifics..."
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex gap-4 pt-4 border-t border-gray-100 dark:border-gray-700 sticky bottom-0 bg-white dark:bg-[#1a202c] py-4">
+                <button type="button" onClick={() => setIsEvalModalOpen(false)} className="flex-1 py-3 border border-gray-200 dark:border-gray-700 rounded-lg font-bold dark:text-white">Cancel</button>
+                <button type="submit" className="flex-1 py-3 bg-primary text-white font-bold rounded-lg shadow-lg hover:bg-blue-700">
+                  {editingEvalId ? 'Update Evaluation' : 'Save Final Evaluation'}
+                </button>
+              </div>
             </form>
           </div>
         </div>
@@ -578,7 +714,7 @@ const App: React.FC = () => {
               <h3 className="text-xl font-bold dark:text-white">Feedback Details</h3>
               <button onClick={() => setViewingEval(null)}><span className="material-symbols-outlined text-gray-400">close</span></button>
             </div>
-            <div className="p-6 space-y-6">
+            <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
               <div className="flex justify-between items-center">
                 <div>
                   <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{viewingEval.date}</p>
