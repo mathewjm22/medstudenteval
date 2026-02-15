@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { Preceptor } from '../types';
 
 export type View = 'Dashboard' | 'Students' | 'Schedule' | 'Resources' | 'Concepts' | 'AI Summary';
 
@@ -8,9 +9,18 @@ interface HeaderProps {
   onNavigate: (view: View) => void;
   onExport?: () => void;
   onImport?: () => void;
+  preceptor: Preceptor;
+  onEditProfile: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ currentView, onNavigate, onExport, onImport }) => {
+const Header: React.FC<HeaderProps> = ({ 
+  currentView, 
+  onNavigate, 
+  onExport, 
+  onImport, 
+  preceptor, 
+  onEditProfile 
+}) => {
   const navItems: View[] = ['Dashboard', 'Students', 'Concepts', 'AI Summary', 'Schedule', 'Resources'];
 
   return (
@@ -62,8 +72,15 @@ const Header: React.FC<HeaderProps> = ({ currentView, onNavigate, onExport, onIm
             </button>
           </div>
           
-          <button aria-label="Preceptor Profile" className="flex items-center gap-2 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-gray-900">
-            <div className="size-10 rounded-full bg-cover bg-center border border-gray-200 dark:border-gray-700" style={{ backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuAu_bA54j7E6jHFqEr44Dh7hoeMipzwNO5SAsYcZ5ZGmNFADIgn685yOJigN8VfHo_2yuoGMg3BHVXz4wJpXBYhA8Jh5DJ_2v9-OTD0FhiqPNoU7W1pK5T7IdSRdTsnta6FN5qzN-KZErGa0oCo6lN_w9fRatQXnF81CjUH4LUp13xquR3nYCcH_ylWA9vZz_-nIidgsPYjG1MeznQRUY71svahsV1Eck_gGDd3lDdIB4daCqGrKzmvUQslvPHNIvgR6xHN_w4ODkIu')" }}></div>
+          <button 
+            aria-label="Preceptor Profile" 
+            onClick={onEditProfile}
+            className="flex items-center gap-2 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+          >
+            <div 
+              className="size-10 rounded-full bg-cover bg-center border border-gray-200 dark:border-gray-700" 
+              style={{ backgroundImage: `url('${preceptor.avatar}')` }}
+            ></div>
             <span className="material-symbols-outlined text-gray-400 hidden sm:block">arrow_drop_down</span>
           </button>
         </div>
