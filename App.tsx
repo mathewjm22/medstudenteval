@@ -139,7 +139,7 @@ const App: React.FC = () => {
     }
   ];
 
-  const student = students[0]; // Default student for details
+  const student = useMemo(() => students.find(s => s.name === selectedStudentId) || students[0], [selectedStudentId]);
 
   const generateAISummary = async () => {
     setIsGeneratingSummary(true);
@@ -257,7 +257,7 @@ const App: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {students.map((s, idx) => (
-          <div 
+          <div
             key={idx}
             onClick={() => { setCurrentView('Students'); setSelectedStudentId(s.name); }}
             className="group bg-white dark:bg-[#1a202c] rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm hover:shadow-xl hover:border-primary/50 transition-all cursor-pointer relative overflow-hidden"
