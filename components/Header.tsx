@@ -2,7 +2,7 @@
 import React from 'react';
 import { Preceptor } from '../types';
 
-export type View = 'Dashboard' | 'Students' | 'Schedule' | 'Resources' | 'Concepts' | 'AI Summary';
+export type View = 'Dashboard' | 'Students' | 'Conditions' | 'Schedule' | 'Resources' | 'Concepts' | 'AI Summary';
 
 interface HeaderProps {
   currentView: View;
@@ -21,7 +21,7 @@ const Header: React.FC<HeaderProps> = ({
   preceptor, 
   onEditProfile 
 }) => {
-  const navItems: View[] = ['Dashboard', 'Students', 'Concepts', 'AI Summary', 'Schedule', 'Resources'];
+  const navItems: View[] = ['Dashboard', 'Students', 'Conditions', 'Concepts', 'AI Summary', 'Schedule', 'Resources'];
 
   return (
     <header className="sticky top-0 z-50 bg-white dark:bg-[#1a202c] border-b border-[#f0f2f4] dark:border-gray-700 px-6 py-3 shadow-sm no-print">

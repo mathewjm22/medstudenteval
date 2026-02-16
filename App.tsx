@@ -6,6 +6,8 @@ import ProfileHeader from './components/ProfileHeader';
 import CompetenciesCard from './components/CompetenciesCard';
 import EvaluationsCard from './components/EvaluationsCard';
 import RightSidebar from './components/RightSidebar';
+import ConditionsList from './components/ConditionsList';
+import { conditionsData } from './data/conditionsData';
 import { Student, Phase, Competency, Evaluation, Assignment, EvaluationSkills, EvaluationSkillComments, Preceptor } from './types';
 
 const App: React.FC = () => {
@@ -41,7 +43,8 @@ const App: React.FC = () => {
       avgEval: 4.5,
       progressPercent: 68,
       weeksRemaining: 4,
-      avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuDg63s5VzT-QBwYhSmVQHIUkYILtCa8XsPy9WXSWvgBsp2YgOu80Xxu1igJO1eVy9WxSu8MIGmlQ9QwooIo-j5DtJN5cEu2qELWHQL-IZjW7G7_hua8PaS2BGZQGGfqNVEyC08RB_iIZfXjdelMYYni6yJrqxdW7bVLivcrmO1UZYjiXWJlu-J_97o5G1t-PA7jlDfQAmGZPl3H8E5RuL8VxVjEYK0-OaEjaAtOrgEdhoulu6RS81I-wpTS8Q1WdAJDxnuYewZxbwf-"
+      avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuDg63s5VzT-QBwYhSmVQHIUkYILtCa8XsPy9WXSWvgBsp2YgOu80Xxu1igJO1eVy9WxSu8MIGmlQ9QwooIo-j5DtJN5cEu2qELWHQL-IZjW7G7_hua8PaS2BGZQGGfqNVEyC08RB_iIZfXjdelMYYni6yJrqxdW7bVLivcrmO1UZYjiXWJlu-J_97o5G1t-PA7jlDfQAmGZPl3H8E5RuL8VxVjEYK0-OaEjaAtOrgEdhoulu6RS81I-wpTS8Q1WdAJDxnuYewZxbwf-",
+      checkedConditions: []
     },
     {
       name: "Jamie Vance",
@@ -55,7 +58,8 @@ const App: React.FC = () => {
       avgEval: 4.8,
       progressPercent: 42,
       weeksRemaining: 6,
-      avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuCc5TyV6hjONVHhaASBdgm-ptO0sizLYXAfn0K9XZYcuSLVoz-4NZ_jn0fBb4hdVM5-84BOyv-Cj62VwIfnMy11slnhsfBdrVcAWvR428pptkfMIQ51HM6a0TJ9GogCNylFuyFcju9mxS2v1zh-UJL0oQk-F2SO5ISe3h2a8veuLbxRjw38SbKBiZ7HigJoHyUSKEtEE58wX3fJT2mdcOy2ZWwaurt23ShhRCH-mh8ss9LLxY4pIopSOPHfZzmnw08sOZA8uzLMr8jv"
+      avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuCc5TyV6hjONVHhaASBdgm-ptO0sizLYXAfn0K9XZYcuSLVoz-4NZ_jn0fBb4hdVM5-84BOyv-Cj62VwIfnMy11slnhsfBdrVcAWvR428pptkfMIQ51HM6a0TJ9GogCNylFuyFcju9mxS2v1zh-UJL0oQk-F2SO5ISe3h2a8veuLbxRjw38SbKBiZ7HigJoHyUSKEtEE58wX3fJT2mdcOy2ZWwaurt23ShhRCH-mh8ss9LLxY4pIopSOPHfZzmnw08sOZA8uzLMr8jv",
+      checkedConditions: []
     }
   ]);
 
@@ -368,6 +372,19 @@ const App: React.FC = () => {
     setAssignments(prev => prev.map(a => a.id === id ? { ...a, status: a.status === 'done' ? 'pending' : 'done', completedDate: a.status === 'pending' ? new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : undefined } : a));
   };
 
+  const handleToggleCondition = (conditionId: string) => {
+    setStudents(prev => prev.map(s => {
+      if (s.name === currentStudent.name) {
+        const currentChecked = s.checkedConditions || [];
+        const newChecked = currentChecked.includes(conditionId)
+          ? currentChecked.filter(id => id !== conditionId)
+          : [...currentChecked, conditionId];
+        return { ...s, checkedConditions: newChecked };
+      }
+      return s;
+    }));
+  };
+
   const renderDashboard = () => (
     <div className="animate-in fade-in duration-500 space-y-8">
       <div className="flex justify-between items-end">
@@ -543,6 +560,13 @@ const App: React.FC = () => {
     switch (currentView) {
       case 'Dashboard': return renderDashboard();
       case 'Schedule': return renderSchedule();
+      case 'Conditions': return (
+        <ConditionsList
+          data={conditionsData}
+          checkedConditions={currentStudent.checkedConditions || []}
+          onToggle={handleToggleCondition}
+        />
+      );
       case 'Resources': return renderResources();
       case 'Concepts': return (
         <div className="animate-in fade-in duration-300">
