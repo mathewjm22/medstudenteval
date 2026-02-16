@@ -18,6 +18,9 @@ const App: React.FC = () => {
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [viewingEval, setViewingEval] = useState<Evaluation | null>(null);
 
+  // Calendar State
+  const [calendarDate, setCalendarDate] = useState(new Date());
+
   // Preceptor State
   const [preceptor, setPreceptor] = useState<Preceptor>({
     name: "Dr. Preceptor (You)",
@@ -166,7 +169,6 @@ const App: React.FC = () => {
 
   // Sync conditions from evaluations automatically
   useEffect(() => {
-    // FIX: Moved evaluations state declaration above this useEffect
     const allEvalConditions = evaluations.flatMap(e => e.conditions || []);
     if (allEvalConditions.length === 0) return;
 
@@ -370,7 +372,7 @@ const App: React.FC = () => {
     <div className="animate-in fade-in duration-500 space-y-8">
       <div className="flex justify-between items-end">
         <div>
-          <h1>Preceptor Dashboard</h1>
+          <h1 className="text-3xl font-extrabold dark:text-white">Preceptor Dashboard</h1>
           <p className="text-[#616f89] dark:text-gray-400">Team health and rotation status overview.</p>
         </div>
         <div className="flex gap-4">
@@ -406,53 +408,111 @@ const App: React.FC = () => {
     </div>
   );
 
-  const renderSchedule = () => (
-    <div className="animate-in fade-in duration-500">
-      <h2 className="text-2xl font-black dark:text-white mb-6">Clinical Schedule</h2>
-      <div className="bg-white dark:bg-[#1a202c] rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-lg">
-        <div className="grid grid-cols-7 bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => <div key={d} className="p-4 text-center text-xs font-black text-gray-400 uppercase">{d}</div>)}
+  const getCalendarDays = () => {
+    const year = calendarDate.getFullYear();
+    const month = calendarDate.getMonth();
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    
+    const days = [];
+    // Prev month padding
+    const prevMonthDays = new Date(year, month, 0).getDate();
+    for (let i = firstDay - 1; i >= 0; i--) {
+      days.push({ day: prevMonthDays - i, currentMonth: false, month: month - 1, year });
+    }
+    // Current month
+    for (let i = 1; i <= daysInMonth; i++) {
+      days.push({ day: i, currentMonth: true, month, year });
+    }
+    // Next month padding
+    const remaining = 42 - days.length;
+    for (let i = 1; i <= remaining; i++) {
+      days.push({ day: i, currentMonth: false, month: month + 1, year });
+    }
+    return days;
+  };
+
+  const renderSchedule = () => {
+    const days = getCalendarDays();
+    const monthName = calendarDate.toLocaleString('default', { month: 'long' });
+    const year = calendarDate.getFullYear();
+
+    const changeMonth = (offset: number) => {
+      const nextDate = new Date(calendarDate);
+      nextDate.setMonth(calendarDate.getMonth() + offset);
+      setCalendarDate(nextDate);
+    };
+
+    return (
+      <div className="animate-in fade-in duration-500">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-black dark:text-white">Clinical Schedule</h2>
+          <div className="flex items-center gap-4 bg-white dark:bg-gray-800 p-2 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+            <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors text-primary">
+              <span className="material-symbols-outlined">chevron_left</span>
+            </button>
+            <span className="text-sm font-black dark:text-white uppercase tracking-widest min-w-[150px] text-center">
+              {monthName} {year}
+            </span>
+            <button onClick={() => changeMonth(1)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors text-primary">
+              <span className="material-symbols-outlined">chevron_right</span>
+            </button>
+          </div>
         </div>
-        <div className="grid grid-cols-7 min-h-[500px]">
-          {Array.from({ length: 35 }).map((_, i) => (
-            <div key={i} className="p-4 border-r border-b border-gray-100 dark:border-gray-700 min-h-[120px] hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-              <span className="text-xs font-bold text-gray-300">{(i % 31) + 1}</span>
-              {i === 17 && (
-                <button 
-                  onClick={() => setViewingEval(evaluations[0])}
-                  className="mt-2 w-full text-left p-2 bg-primary/10 border border-primary/20 rounded-lg hover:bg-primary/20 transition-all cursor-pointer group"
-                >
-                  <p className="text-[10px] font-black text-primary uppercase">2:00 PM</p>
-                  <p className="text-[10px] font-bold dark:text-white line-clamp-1 group-hover:text-primary">{currentStudent.name} Feedback</p>
-                </button>
-              )}
-              {i === 20 && (
-                <div className="mt-2 p-2 bg-green-100 border border-green-200 rounded-lg">
-                  <p className="text-[10px] font-black text-green-700 uppercase">9:00 AM</p>
-                  <p className="text-[10px] font-bold text-green-800 line-clamp-1">Clinical Rounds</p>
+
+        <div className="bg-white dark:bg-[#1a202c] rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-lg">
+          <div className="grid grid-cols-7 bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
+            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+              <div key={d} className="p-4 text-center text-xs font-black text-gray-400 uppercase tracking-widest">{d}</div>
+            ))}
+          </div>
+          <div className="grid grid-cols-7 border-collapse">
+            {days.map((d, i) => {
+              const cellDateStr = new Date(d.year, d.month, d.day).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+              const dayEvals = evaluations.filter(ev => ev.date === cellDateStr);
+              const isToday = new Date().toDateString() === new Date(d.year, d.month, d.day).toDateString();
+
+              return (
+                <div key={i} className={`p-3 border-r border-b border-gray-100 dark:border-gray-700 min-h-[120px] hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors ${!d.currentMonth ? 'opacity-25' : ''}`}>
+                  <div className="flex justify-between items-start mb-2">
+                    <span className={`text-xs font-black ${isToday ? 'bg-primary text-white size-6 flex items-center justify-center rounded-full' : 'text-gray-400'}`}>
+                      {d.day}
+                    </span>
+                  </div>
+                  
+                  {/* Dynamic Evaluations */}
+                  {dayEvals.map(ev => (
+                    <button 
+                      key={ev.id}
+                      onClick={() => setViewingEval(ev)}
+                      className="mb-1.5 w-full text-left p-2 bg-primary/10 border border-primary/20 rounded-lg hover:bg-primary/20 transition-all cursor-pointer group shadow-sm"
+                    >
+                      <p className="text-[10px] font-black text-primary uppercase tracking-tighter">Evaluation</p>
+                      <p className="text-[9px] font-bold dark:text-white line-clamp-1 group-hover:text-primary leading-tight">{ev.title}</p>
+                    </button>
+                  ))}
+
+                  {/* Placeholders for specific dates in Feb/Jan for aesthetic consistency if no evals */}
+                  {d.month === 1 && d.day === 12 && d.year === 2024 && (
+                    <div className="mt-1 p-2 bg-purple-100 border border-purple-200 rounded-lg shadow-sm">
+                      <p className="text-[10px] font-black text-purple-700 uppercase tracking-tighter">12:00 PM</p>
+                      <p className="text-[9px] font-bold text-purple-800 line-clamp-1">Grand Rounds</p>
+                    </div>
+                  )}
+                  {d.month === 1 && d.day === 20 && d.year === 2024 && (
+                    <div className="mt-1 p-2 bg-green-100 border border-green-200 rounded-lg shadow-sm">
+                      <p className="text-[10px] font-black text-green-700 uppercase tracking-tighter">9:00 AM</p>
+                      <p className="text-[9px] font-bold text-green-800 line-clamp-1">Clinical Rounds</p>
+                    </div>
+                  )}
                 </div>
-              )}
-              {i === 12 && (
-                <div className="mt-2 p-2 bg-purple-100 border border-purple-200 rounded-lg">
-                  <p className="text-[10px] font-black text-purple-700 uppercase">12:00 PM</p>
-                  <p className="text-[10px] font-bold text-purple-800 line-clamp-1">Grand Rounds</p>
-                </div>
-              )}
-              {i === 19 && evaluations[1] && (
-                <button 
-                  onClick={() => setViewingEval(evaluations[1])}
-                  className="mt-2 w-full text-left p-2 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-all cursor-pointer group"
-                >
-                  <p className="text-[10px] font-black text-blue-700 uppercase">10:30 AM</p>
-                  <p className="text-[10px] font-bold text-blue-800 line-clamp-1 group-hover:text-primary">Case Review</p>
-                </button>
-              )}
-            </div>
-          ))}
+              );
+            })}
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderResources = () => (
     <div className="animate-in fade-in duration-500 space-y-8">
