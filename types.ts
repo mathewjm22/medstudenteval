@@ -67,4 +67,5 @@ export interface Student {
   progressPercent: number;
   weeksRemaining: number;
   avatar: string;
+  checkedConditions?: string[];
 }
